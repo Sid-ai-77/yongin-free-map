@@ -145,7 +145,7 @@
 
 <!-- Splash Screen -->
 <div class="splash" id="splash">
-  <video src="loading.mp4" autoplay loop muted playsinline style="width:120px;height:120px;border-radius:24px;box-shadow:0 4px 20px rgba(0,0,0,0.2)"></video>
+  <video src="loading.mp4" autoplay loop muted playsinline style="width:200px;height:200px;border-radius:30px;box-shadow:0 4px 20px rgba(0,0,0,0.2)"></video>
   <div class="splash-name">공짜병법</div>
   <div class="splash-status" id="splashStatus">위치를 확인하고 있습니다<span class="splash-dots"></span></div>
   <div class="splash-bar"><div class="splash-bar-fill"></div></div>
@@ -247,8 +247,7 @@
       </div>
       <div class="map-info-actions" style="margin-top:6px">
         <button class="map-info-btn" id="mapInfoHeart" style="background:#fff;border:1.5px solid #FF6B35;color:#FF6B35;font-size:13px">&#x2661; <span id="heartCount">0</span></button>
-        <button class="map-info-btn" id="mapInfoKakao" style="background:#FEE500;color:#333;font-size:11px">카카오 리뷰</button>
-        <button class="map-info-btn" id="mapInfoNaver" style="background:#03C75A;color:#fff;font-size:11px">네이버 리뷰</button>
+        <button class="map-info-btn" id="mapInfoKakao" style="background:#FEE500;color:#333;font-size:11px">리뷰보기</button>
       </div>
       <div id="reviewSection" style="margin-top:10px;border-top:1px solid #f0f0f0;padding-top:10px">
         <div style="display:flex;gap:6px;margin-bottom:8px">
@@ -973,12 +972,6 @@ document.getElementById('mapInfoKakao').addEventListener('click',()=>{
   const p=infoSelectedPlace;
   if(p.place_url){window.open(p.place_url,'_blank')}
   else{window.open('https://map.kakao.com/link/search/'+encodeURIComponent(p.place_name),'_blank')}
-});
-document.getElementById('mapInfoNaver').addEventListener('click',()=>{
-  if(!infoSelectedPlace)return;
-  const name=infoSelectedPlace.place_name||'';
-  const addr=infoSelectedPlace.road_address_name||infoSelectedPlace.address_name||'';
-  window.open('https://m.search.naver.com/search.naver?query='+encodeURIComponent(name+' '+addr+' 리뷰'),'_blank');
 });
 document.getElementById('mapInfoClose').addEventListener('click',()=>{
   document.getElementById('mapInfoCard').classList.remove('show');
