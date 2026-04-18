@@ -378,32 +378,26 @@ function loadCheapPlaces(){
     fetch(url).then(r=>r.json()).then(json=>{
       if(json.data&&json.data.length>0){
         html+='<div style="font-size:12px;font-weight:700;color:#E65100;padding:8px 0;border-bottom:1px solid #f0f0f0;margin:16px 0 10px">'+sido+' 착한가격 인증업소 (가격정보)</div>';
-        sortByDistance(json.data,stores=>{
-          html+=stores.map(s=>{
-            const name=s.업소명||'';const addr=s.주소||'';const biz=s.업종||'';const phone=s.연락처||'';
-            const menus=[];
-            if(s.메뉴1&&s.가격1)menus.push(s.메뉴1+' '+Number(s.가격1).toLocaleString()+'원');
-            if(s.메뉴2&&s.가격2)menus.push(s.메뉴2+' '+Number(s.가격2).toLocaleString()+'원');
-            if(s.메뉴3&&s.가격3)menus.push(s.메뉴3+' '+Number(s.가격3).toLocaleString()+'원');
-            const menuText=menus.join(' / ');
-            const distText=s._dist&&s._dist<99999?formatDist(s._dist):'';
-            return `<div class="place-card" onclick="window.open('https://map.kakao.com/link/search/${encodeURIComponent(name+' '+addr)}','_blank')">
-              <div class="place-top"><span class="card-badge badge-cheap">착한가격</span><span style="font-size:11px;color:#888">${biz}${distText?' · <b style="color:#FF6B35">'+distText+'</b>':''}</span></div>
-              <div class="place-name">${name}</div>
-              ${menuText?'<div style="font-size:13px;font-weight:800;color:#E65100;margin:4px 0">'+menuText+'</div>':''}
-              <div class="place-meta"><span style="font-weight:600">${addr}</span></div>
-              ${phone?'<div style="font-size:11px;color:#aaa;margin-top:4px">'+phone+'</div>':''}
-              <div class="place-actions"><button class="place-action-btn navi" onclick="event.stopPropagation();window.open('https://map.kakao.com/link/search/${encodeURIComponent(name)}','_blank')">길찾기</button><button class="place-action-btn share" onclick="event.stopPropagation();sharePlaceInfo('${name.replace(/'/g,"")}','${(addr+' '+menuText).replace(/'/g,"")}')">공유</button></div>
-            </div>`;
-          }).join('');
-          container.innerHTML=html;
-          // Ad
-          const cards=container.querySelectorAll('.place-card');
-          if(cards.length>3){const ad=document.createElement('div');ad.className='ad-banner';ad.textContent='광고 영역 (AdSense 연동 예정)';cards[2].after(ad)}
-        });
-      }else{
-        container.innerHTML=html||'<div class="empty">착한가격업소를 찾을 수 없습니다.</div>';
+        html+=json.data.map(s=>{
+          const name=s.업소명||'';const addr=s.주소||'';const biz=s.업종||'';const phone=s.연락처||'';
+          const menus=[];
+          if(s.메뉴1&&s.가격1)menus.push(s.메뉴1+' '+Number(s.가격1).toLocaleString()+'원');
+          if(s.메뉴2&&s.가격2)menus.push(s.메뉴2+' '+Number(s.가격2).toLocaleString()+'원');
+          if(s.메뉴3&&s.가격3)menus.push(s.메뉴3+' '+Number(s.가격3).toLocaleString()+'원');
+          const menuText=menus.join(' / ');
+          return `<div class="place-card" onclick="window.open('https://map.kakao.com/link/search/${encodeURIComponent(name+' '+addr)}','_blank')">
+            <div class="place-top"><span class="card-badge badge-cheap">착한가격</span><span style="font-size:11px;color:#888">${biz}</span></div>
+            <div class="place-name">${name}</div>
+            ${menuText?'<div style="font-size:13px;font-weight:800;color:#E65100;margin:4px 0">'+menuText+'</div>':''}
+            <div class="place-meta"><span style="font-weight:600">${addr}</span></div>
+            ${phone?'<div style="font-size:11px;color:#aaa;margin-top:4px">'+phone+'</div>':''}
+            <div class="place-actions"><button class="place-action-btn navi" onclick="event.stopPropagation();window.open('https://map.kakao.com/link/search/${encodeURIComponent(name)}','_blank')">길찾기</button><button class="place-action-btn share" onclick="event.stopPropagation();sharePlaceInfo('${name.replace(/'/g,"")}','${(addr+' '+menuText).replace(/'/g,"")}')">공유</button></div>
+          </div>`;
+        }).join('');
       }
+      container.innerHTML=html||'<div class="empty">착한가격업소를 찾을 수 없습니다.</div>';
+      const cards=container.querySelectorAll('.place-card');
+      if(cards.length>3){const ad=document.createElement('div');ad.className='ad-banner';ad.textContent='광고 영역 (AdSense 연동 예정)';cards[2].after(ad)}
     }).catch(()=>{
       container.innerHTML=html||'<div class="empty">데이터를 불러올 수 없습니다.</div>';
     });
