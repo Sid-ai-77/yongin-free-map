@@ -437,6 +437,7 @@ function loadCheapPlaces(){
             <div class="place-actions">
             <button class="place-action-btn navi" onclick="event.stopPropagation();window.open('https://map.kakao.com/link/to/${encodeURIComponent(p.place_name)},${p.y},${p.x}','_blank')">길찾기</button>
             <button class="place-action-btn" style="background:#FEE500;color:#333" onclick="event.stopPropagation();window.open('${p.place_url||'https://map.kakao.com/link/search/'+encodeURIComponent(p.place_name)}','_blank')">리뷰보기</button>
+            <button class="place-action-btn" style="background:#FEE500;color:#333" onclick="event.stopPropagation();sharePlaceInfo('${(p.place_name||'').replace(/'/g,"\\'")}','${(p.road_address_name||p.address_name||'').replace(/'/g,"\\'")}','${p.place_url||''}','cheap')">카톡공유</button>
             <button class="place-action-btn card-heart-btn" style="background:none;border:1px solid #eee;color:#ddd;font-size:14px;padding:3px 8px" data-place-id="${(p.id||p.place_name||'').replace(/[^a-zA-Z0-9가-힣]/g,'_')}" data-place-name="${(p.place_name||'').replace(/"/g,'&quot;')}" onclick="event.stopPropagation();toggleCardHeart(this)">&#x2661;</button>
           </div>
           </div>`;
