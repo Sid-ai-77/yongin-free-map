@@ -173,8 +173,8 @@
   <button class="cat-tab active" data-cat="nearby">내 주변</button>
   <button class="cat-tab" data-cat="cheap">착한가격</button>
   <button class="cat-tab" data-cat="free">무료시설</button>
-  <button class="cat-tab" data-cat="news">주민행사</button>
-  <button class="cat-tab" data-cat="event">축제/공연</button>
+  <button class="cat-tab" data-cat="event">무료행사</button>
+  <button class="cat-tab" data-cat="news">지역소식</button>
 </div>
 
 <div class="main-content" id="mainContent">
@@ -243,7 +243,7 @@
       <div class="map-info-dist" id="mapInfoDist"></div>
       <div style="position:absolute;top:8px;right:40px;display:flex;gap:6px">
         <button id="mapInfoHeart" style="background:none;border:none;font-size:18px;color:#ddd;cursor:pointer">&#x2661; <span id="heartCount" style="font-size:11px;font-weight:600"></span></button>
-        <button id="mapInfoShare" style="background:none;border:none;font-size:16px;color:#ccc;cursor:pointer">&#x1F4E4;</button>
+        <button id="mapInfoShare" style="background:#FEE500;border:none;font-size:11px;color:#333;cursor:pointer;border-radius:4px;padding:2px 6px;font-weight:600">카톡공유</button>
       </div>
       <div class="map-info-actions">
         <button class="map-info-btn primary" id="mapInfoNavi">길찾기</button>
@@ -390,7 +390,18 @@ const CHEAP_API_URL='https://api.odcloud.kr/api/3045247/v1/uddi:538ed062-fccd-43
 
 function matchPrice(name){
   if(!window._cheapData||!name)return '';
-  const found=window._cheapData.find(s=>s.n&&(s.n.includes(name)||name.includes(s.n)));
+  const clean=name.replace(/\s/g,'');
+  // 1차: 정확히 일치
+  let found=window._cheapData.find(s=>s.n&&s.n.replace(/\s/g,'')===clean);
+  // 2차: 한쪽이 다른 쪽을 완전히 포함 (최소 4글자 이상 매칭)
+  if(!found){
+    found=window._cheapData.find(s=>{
+      if(!s.n)return false;
+      const sClean=s.n.replace(/\s/g,'');
+      if(sClean.length<4&&clean.length<4)return false;
+      return (clean.includes(sClean)&&sClean.length>=4)||(sClean.includes(clean)&&clean.length>=4);
+    });
+  }
   if(!found)return '';
   const menus=[];
   if(found.m1&&found.p1)menus.push(found.m1+' '+Number(found.p1).toLocaleString()+'원');
@@ -423,7 +434,11 @@ function loadCheapPlaces(){
             ${priceInfo?'<div style="font-size:13px;font-weight:800;color:#E65100;margin:4px 0">'+priceInfo+'</div>':'<div style="font-size:11px;color:#bbb;margin:2px 0">가격정보 미등록</div>'}
             <div class="place-desc">${p.category_name||''}${p.phone?' · '+p.phone:''}</div>
             <div class="place-meta"><span style="font-weight:600">${p.road_address_name||p.address_name||''}</span></div>
-            <div class="place-actions"><button class="place-action-btn navi" onclick="event.stopPropagation();window.open('https://map.kakao.com/link/to/${encodeURIComponent(p.place_name)},${p.y},${p.x}','_blank')">길찾기</button></div>
+            <div class="place-actions">
+            <button class="place-action-btn navi" onclick="event.stopPropagation();window.open('https://map.kakao.com/link/to/${encodeURIComponent(p.place_name)},${p.y},${p.x}','_blank')">길찾기</button>
+            <button class="place-action-btn" style="background:#FEE500;color:#333" onclick="event.stopPropagation();window.open('${p.place_url||'https://map.kakao.com/link/search/'+encodeURIComponent(p.place_name)}','_blank')">리뷰보기</button>
+            <button class="place-action-btn card-heart-btn" style="background:none;border:1px solid #eee;color:#ddd;font-size:14px;padding:3px 8px" data-place-id="${(p.id||p.place_name||'').replace(/[^a-zA-Z0-9가-힣]/g,'_')}" data-place-name="${(p.place_name||'').replace(/"/g,'&quot;')}" onclick="event.stopPropagation();toggleCardHeart(this)">&#x2661;</button>
+          </div>
           </div>`;
         }).join('');
       }
@@ -462,7 +477,11 @@ function renderCheapFromJSON(container,html,sido,sigun){
         ${menuText?'<div style="font-size:13px;font-weight:800;color:#E65100;margin:4px 0">'+menuText+'</div>':''}
         <div class="place-meta"><span style="font-weight:600">${addr}</span></div>
         ${phone?'<div style="font-size:11px;color:#aaa;margin-top:4px">'+phone+'</div>':''}
-        <div class="place-actions"><button class="place-action-btn navi" onclick="event.stopPropagation();window.open('https://map.kakao.com/link/search/${encodeURIComponent(name)}','_blank')">길찾기</button><button class="place-action-btn share" onclick="event.stopPropagation();sharePlaceInfo('${name.replace(/'/g,"")}','${(addr+' '+menuText).replace(/'/g,"")}')">공유</button></div>
+        <div class="place-actions">
+          <button class="place-action-btn navi" onclick="event.stopPropagation();window.open('https://map.kakao.com/link/search/${encodeURIComponent(name)}','_blank')">길찾기</button>
+          <button class="place-action-btn" style="background:#FEE500;color:#333" onclick="event.stopPropagation();window.open('https://map.kakao.com/link/search/${encodeURIComponent(name+' '+addr)}','_blank')">리뷰보기</button>
+          <button class="place-action-btn card-heart-btn" style="background:none;border:1px solid #eee;color:#ddd;font-size:14px;padding:3px 8px" data-place-id="${name.replace(/[^a-zA-Z0-9가-힣]/g,'_')}" data-place-name="${name.replace(/"/g,'&quot;')}" onclick="event.stopPropagation();toggleCardHeart(this)">&#x2661;</button>
+        </div>
       </div>`;
     }).join('');
   }
@@ -618,23 +637,20 @@ function getBadgeLabel(p,catId){
 // ===== NEWS / EVENTS (RSS) =====
 const RSS2JSON='https://api.rss2json.com/v1/api.json?rss_url=';
 
+function loadEvents(){
+  const container=document.getElementById('items-event');
+  // 전국 무료 축제/공연/행사
+  const url='https://news.google.com/rss/search?q=무료+축제+OR+공연+OR+행사+OR+페스티벌+OR+전시+OR+체험+2026&hl=ko&gl=KR&ceid=KR:ko';
+  loadRSS(container,url,'무료행사');
+}
+
 function loadNews(){
   const container=document.getElementById('items-news');
   const district=myDistrict||'';
   const city=myCity||'';
-  // 시군구 + 시도 두 개 검색어로 더 정확한 지역 행사 검색
-  const loc=district||city||'서울';
-  const url='https://news.google.com/rss/search?q='+encodeURIComponent(loc)+'+주민+행사+OR+축제+OR+마을+OR+주민센터+OR+문화행사+OR+체험+OR+무료&hl=ko&gl=KR&ceid=KR:ko';
-  loadRSS(container,url,'지역행사');
-}
-
-function loadEvents(){
-  const container=document.getElementById('items-event');
-  const district=myDistrict||'';
-  const city=myCity||'';
-  const loc=(district&&city)?city+'+'+district:city||'서울';
-  const url='https://news.google.com/rss/search?q='+encodeURIComponent(loc)+'+행사+OR+축제+OR+공연+OR+전시+OR+체험+OR+무료+OR+접수&hl=ko&gl=KR&ceid=KR:ko';
-  loadRSS(container,url,'행사');
+  const loc=(district&&city)?district+' '+city:(city||'서울');
+  const url='https://news.google.com/rss/search?q='+encodeURIComponent(loc)+'+소식+OR+뉴스+OR+안내+OR+공지&hl=ko&gl=KR&ceid=KR:ko';
+  loadRSS(container,url,'지역소식');
 }
 
 function loadRSS(container,feedUrl,badgeText){
@@ -669,10 +685,26 @@ function renderNewsCards(container,items,badgeText){
 }
 
 // ===== SHARE =====
-function sharePlaceInfo(name,addr){
-  const text='[공짜병법] '+name+'\n'+addr;
-  if(navigator.share){navigator.share({title:'공짜병법 - '+name,text:text}).catch(()=>{})}
-  else{navigator.clipboard.writeText(text).then(()=>toast('복사되었습니다!')).catch(()=>{})}
+function sharePlaceInfo(name,addr,placeUrl){
+  if(typeof Kakao!=='undefined'&&Kakao.isInitialized()){
+    const url=placeUrl||'https://map.kakao.com/link/search/'+encodeURIComponent(name);
+    Kakao.Share.sendDefault({
+      objectType:'location',
+      address:addr,
+      addressTitle:name,
+      content:{
+        title:name,
+        description:'공짜병법에서 찾은 착한가격/무료 장소입니다.\n'+addr,
+        imageUrl:'https://sid-ai-77.github.io/yongin-free-map/icon-512.png',
+        link:{mobileWebUrl:url,webUrl:url}
+      },
+      buttons:[{title:'카카오맵에서 보기',link:{mobileWebUrl:url,webUrl:url}}]
+    });
+  }else{
+    const text='[공짜병법] '+name+'\n'+addr;
+    if(navigator.share){navigator.share({title:'공짜병법 - '+name,text:text}).catch(()=>{})}
+    else{navigator.clipboard.writeText(text).then(()=>toast('복사되었습니다!')).catch(()=>{})}
+  }
 }
 
 // ===== SEARCH =====
@@ -941,7 +973,9 @@ function fetchPriceInfo(name,addr){
   // 로컬 JSON에서 업소명 검색
   function doSearch(){
     if(!window._cheapData)return;
-    const found=window._cheapData.find(s=>s.n&&(s.n.includes(name)||name.includes(s.n)));
+    const clean=name.replace(/\s/g,'');
+    let found=window._cheapData.find(s=>s.n&&s.n.replace(/\s/g,'')===clean);
+    if(!found)found=window._cheapData.find(s=>{if(!s.n)return false;const sc=s.n.replace(/\s/g,'');return(sc.length>=4&&clean.includes(sc))||(clean.length>=4&&sc.includes(clean))});
     if(found){
       const menus=[];
       if(found.m1&&found.p1)menus.push('<b>'+found.m1+'</b> '+Number(found.p1).toLocaleString()+'원');
@@ -965,7 +999,8 @@ document.getElementById('mapInfoNavi').addEventListener('click',()=>{
 });
 document.getElementById('mapInfoShare').addEventListener('click',()=>{
   if(!infoSelectedPlace)return;
-  sharePlaceInfo(infoSelectedPlace.place_name,infoSelectedPlace.road_address_name||infoSelectedPlace.address_name||'');
+  const p=infoSelectedPlace;
+  sharePlaceInfo(p.place_name,p.road_address_name||p.address_name||'',p.place_url);
 });
 document.getElementById('mapInfoKakao').addEventListener('click',()=>{
   if(!infoSelectedPlace)return;
@@ -998,6 +1033,20 @@ document.getElementById('clearCacheBtn').addEventListener('click',()=>{
   location.reload();
 });
 
+// ===== CARD HEART (list view) =====
+window.toggleCardHeart=function(btn){
+  const placeId=btn.dataset.placeId;
+  const placeName=btn.dataset.placeName;
+  if(!placeId||!window._firebaseReady){
+    // Firebase 로딩 전이면 로컬만
+    if(btn.innerHTML.includes('2661')){btn.innerHTML='&#x2665;';btn.style.color='#FF6B35';toast(placeName+' 좋아요!')}
+    else{btn.innerHTML='&#x2661;';btn.style.color='#ddd'}
+    return;
+  }
+  // Firebase 연동은 module scope에서 처리
+  if(window.toggleHeartFirebase)window.toggleHeartFirebase(placeId,placeName,btn);
+};
+
 // ===== PWA =====
 if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{})}
 
@@ -1010,8 +1059,13 @@ updateFavBadge();
 (function(){
   const s=document.createElement('script');
   s.src='//dapi.kakao.com/v2/maps/sdk.js?appkey='+KAKAO_APP_KEY+'&autoload=false&libraries=services';
-  s.onload=()=>{kakao.maps.load(()=>{console.log('Kakao SDK ready')})};
+  s.onload=()=>{kakao.maps.load(()=>{console.log('Kakao Maps SDK ready')})};
   document.head.appendChild(s);
+  // 카카오 JS SDK (공유용)
+  const ks=document.createElement('script');
+  ks.src='https://t1.kakaocdn.net/kakao_js_sdk/2.7.4/kakao.min.js';
+  ks.onload=()=>{Kakao.init(KAKAO_APP_KEY);console.log('Kakao Share SDK ready')};
+  document.head.appendChild(ks);
 })();
 </script>
 
@@ -1082,6 +1136,24 @@ window.loadReviews=async function(placeId){
       return '<div style="padding:4px 0;border-bottom:1px solid #f9f9f9"><span style="color:#FF6B35;font-weight:600">'+r.nick+'</span> <span style="color:#aaa;font-size:10px">'+date+'</span><div style="margin-top:2px">'+r.text+'</div></div>';
     }).join('');
   }catch(e){list.innerHTML=''}
+};
+
+window._firebaseReady=true;
+
+window.toggleHeartFirebase=async function(placeId,placeName,btn){
+  try{
+    const ref=doc(db,'hearts',placeId);
+    const snap=await getDoc(ref);
+    if(snap.exists()){
+      const users=snap.data().users||[];
+      if(users.includes(deviceId)){toast('이미 좋아요를 누르셨습니다');return}
+      await updateDoc(ref,{count:increment(1),users:[...users,deviceId]});
+    }else{
+      await setDoc(ref,{count:1,users:[deviceId],name:placeName});
+    }
+    btn.innerHTML='&#x2665;';btn.style.color='#FF6B35';
+    toast(placeName+' 좋아요!');
+  }catch(e){console.log(e);toast('잠시 후 다시 시도해주세요')}
 };
 
 document.getElementById('reviewSubmit').addEventListener('click',async()=>{
