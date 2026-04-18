@@ -686,24 +686,13 @@ function renderNewsCards(container,items,badgeText){
 
 // ===== SHARE =====
 function sharePlaceInfo(name,addr,placeUrl){
-  if(typeof Kakao!=='undefined'&&Kakao.isInitialized()){
-    const url=placeUrl||'https://map.kakao.com/link/search/'+encodeURIComponent(name);
-    Kakao.Share.sendDefault({
-      objectType:'location',
-      address:addr,
-      addressTitle:name,
-      content:{
-        title:name,
-        description:'공짜병법에서 찾은 착한가격/무료 장소입니다.\n'+addr,
-        imageUrl:'https://sid-ai-77.github.io/yongin-free-map/icon-512.png',
-        link:{mobileWebUrl:url,webUrl:url}
-      },
-      buttons:[{title:'카카오맵에서 보기',link:{mobileWebUrl:url,webUrl:url}}]
-    });
+  const url=placeUrl||'https://map.kakao.com/link/search/'+encodeURIComponent(name);
+  const text='[공짜병법] '+name+'\n'+addr+'\n'+url;
+  // 모바일: 네이티브 공유 시트 (카카오톡 포함)
+  if(navigator.share){
+    navigator.share({title:'공짜병법 - '+name,text:text,url:url}).catch(()=>{});
   }else{
-    const text='[공짜병법] '+name+'\n'+addr;
-    if(navigator.share){navigator.share({title:'공짜병법 - '+name,text:text}).catch(()=>{})}
-    else{navigator.clipboard.writeText(text).then(()=>toast('복사되었습니다!')).catch(()=>{})}
+    navigator.clipboard.writeText(text).then(()=>toast('복사되었습니다!')).catch(()=>{});
   }
 }
 
