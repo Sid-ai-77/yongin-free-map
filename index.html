@@ -375,10 +375,11 @@ function loadCheapPlaces(){
           const dist=p.distance?formatDist(parseFloat(p.distance)/1000):'';
           // JSON에서 가격정보 매칭
           const priceInfo=matchPrice(p.place_name||'');
+          const isOfficial=!!priceInfo;
           return `<div class="place-card" data-lat="${p.y}" data-lng="${p.x}">
-            <div class="place-top"><span class="card-badge badge-cheap">착한가격</span><span class="card-dist">${dist}</span></div>
+            <div class="place-top"><span class="card-badge badge-cheap">착한가격</span><span style="font-size:10px;color:${isOfficial?'#2E7D32':'#999'};font-weight:600">${isOfficial?'공식인증':'비공식'}</span><span class="card-dist">${dist}</span></div>
             <div class="place-name">${p.place_name||''}</div>
-            ${priceInfo?'<div style="font-size:13px;font-weight:800;color:#E65100;margin:4px 0">'+priceInfo+'</div>':''}
+            ${priceInfo?'<div style="font-size:13px;font-weight:800;color:#E65100;margin:4px 0">'+priceInfo+'</div>':'<div style="font-size:11px;color:#bbb;margin:2px 0">가격정보 미등록</div>'}
             <div class="place-desc">${p.category_name||''}${p.phone?' · '+p.phone:''}</div>
             <div class="place-meta"><span style="font-weight:600">${p.road_address_name||p.address_name||''}</span></div>
             <div class="place-actions"><button class="place-action-btn navi" onclick="event.stopPropagation();window.open('https://map.kakao.com/link/to/${encodeURIComponent(p.place_name)},${p.y},${p.x}','_blank')">길찾기</button></div>
