@@ -362,13 +362,13 @@ function loadCheapPlaces(){
     .then(r=>r.json())
     .then(json=>{
       if(json.data&&json.data.length>0){
-        renderCheapCards(container,json.data);
+        sortByDistance(json.data,stores=>renderCheapCards(container,stores));
       }else if(sido){
         // 시군 필터 없이 시도로만 재검색
         fetch(CHEAP_API_URL+'?page=1&perPage=100&serviceKey='+CHEAP_API_KEY+'&cond[시도::EQ]='+encodeURIComponent(sido))
           .then(r=>r.json())
           .then(json2=>{
-            if(json2.data&&json2.data.length>0)renderCheapCards(container,json2.data);
+            if(json2.data&&json2.data.length>0)sortByDistance(json2.data,stores=>renderCheapCards(container,stores));
             else container.innerHTML='<div class="empty">이 지역 착한가격업소가 없습니다.</div>';
           }).catch(()=>{container.innerHTML='<div class="empty">데이터를 불러올 수 없습니다.</div>'});
       }else{
@@ -384,6 +384,25 @@ function loadCheapPlaces(){
     });
 }
 
+function sortByDistance(stores,callback){
+  if(!myLat||!myLng){callback(stores);return}
+  waitForKakao(()=>{
+    const geocoder=new kakao.maps.services.Geocoder();
+    let done=0;
+    stores.forEach(s=>{
+      if(!s.주소){s._dist=99999;done++;if(done===stores.length){stores.sort((a,b)=>a._dist-b._dist);callback(stores)}return}
+      geocoder.addressSearch(s.주소,(result,status)=>{
+        if(status===kakao.maps.services.Status.OK&&result[0]){
+          s._lat=parseFloat(result[0].y);s._lng=parseFloat(result[0].x);
+          s._dist=getDistance(myLat,myLng,s._lat,s._lng);
+        }else{s._dist=99999}
+        done++;
+        if(done===stores.length){stores.sort((a,b)=>a._dist-b._dist);callback(stores)}
+      });
+    });
+  });
+}
+
 function renderCheapCards(container,stores){
   container.innerHTML=stores.map(s=>{
     const name=s.업소명||'';
@@ -395,10 +414,11 @@ function renderCheapCards(container,stores){
     if(s.메뉴2&&s.가격2)menus.push(s.메뉴2+' '+Number(s.가격2).toLocaleString()+'원');
     if(s.메뉴3&&s.가격3)menus.push(s.메뉴3+' '+Number(s.가격3).toLocaleString()+'원');
     const menuText=menus.join(' / ');
+    const distText=s._dist&&s._dist<99999?formatDist(s._dist):'';
     return `<div class="place-card" onclick="window.open('https://map.kakao.com/link/search/${encodeURIComponent(name+' '+addr)}','_blank')">
       <div class="place-top">
         <span class="card-badge badge-cheap">착한가격</span>
-        <span style="font-size:11px;color:#888">${biz}</span>
+        <span style="font-size:11px;color:#888">${biz}${distText?' · <b style="color:#FF6B35">'+distText+'</b>':''}</span>
       </div>
       <div class="place-name">${name}</div>
       ${menuText?'<div style="font-size:13px;font-weight:800;color:#E65100;margin:4px 0">'+menuText+'</div>':''}
@@ -740,13 +760,15 @@ function showMapInfo(place){
   const badge=document.getElementById('mapInfoBadge');
   badge.style.background=ml.color;badge.style.color='#fff';
   badge.textContent=ml.text;
-  document.getElementById('mapInfoTitle').textContent=place.place_name||'';
-  const isCheap=((place.place_name||'')+(place.category_name||'')).includes('착한가격');
-  const priceTag=isCheap?' &#x1F4B0; 착한가격 인증업소':'';
-  document.getElementById('mapInfoDesc').innerHTML=(place.category_name||'')+(place.phone?' · '+place.phone:'')+priceTag;
+  // 착한가격업소 가격 조회
+  const pName=place.place_name||'';
+  document.getElementById('mapInfoTitle').innerHTML=pName;
+  const isCheap=(pName+(place.category_name||'')).includes('착한가격');
+  document.getElementById('mapInfoDesc').innerHTML=(place.category_name||'')+(place.phone?' · '+place.phone:'');
   document.getElementById('mapInfoAddr').textContent=place.road_address_name||place.address_name||'';
-  const dist=place.distance?formatDist(parseFloat(place.distance)/1000)+' 거리':'';
-  document.getElementById('mapInfoDist').textContent=dist;
+  // 가격 정보 조회 (착한가격업소 API에서)
+  document.getElementById('mapInfoDist').innerHTML='';
+  fetchPriceInfo(pName,place.road_address_name||place.address_name||'');
   document.getElementById('mapInfoCard').classList.add('show');
 }
 
@@ -760,6 +782,29 @@ function getMarkerLabel(p){
   if(n.includes('문화')||n.includes('학습')||n.includes('강좌'))return{color:'#7B1FA2',text:'문화'};
   if(n.includes('음식')||n.includes('식당')||n.includes('맛집'))return{color:'#E65100',text:'맛집'};
   return{color:'#455A64',text:'장소'};
+}
+
+function fetchPriceInfo(name,addr){
+  const distEl=document.getElementById('mapInfoDist');
+  // 착한가격업소 API에서 업소명으로 검색
+  const searchName=name.replace(/\s/g,'');
+  fetch(CHEAP_API_URL+'?page=1&perPage=5&serviceKey='+CHEAP_API_KEY+'&cond[업소명::LIKE]='+encodeURIComponent(name))
+    .then(r=>r.json())
+    .then(json=>{
+      if(json.data&&json.data.length>0){
+        const s=json.data[0];
+        const menus=[];
+        if(s.메뉴1&&s.가격1)menus.push('<b>'+s.메뉴1+'</b> '+Number(s.가격1).toLocaleString()+'원');
+        if(s.메뉴2&&s.가격2)menus.push('<b>'+s.메뉴2+'</b> '+Number(s.가격2).toLocaleString()+'원');
+        if(s.메뉴3&&s.가격3)menus.push('<b>'+s.메뉴3+'</b> '+Number(s.가격3).toLocaleString()+'원');
+        if(menus.length>0){
+          distEl.innerHTML='<span style="color:#E65100;font-weight:800;font-size:13px">'+menus.join(' / ')+'</span>';
+        }else{
+          distEl.innerHTML='<span style="color:#E65100;font-weight:700">착한가격 인증업소</span>';
+        }
+      }
+    })
+    .catch(()=>{});
 }
 
 document.getElementById('mapInfoNavi').addEventListener('click',()=>{
