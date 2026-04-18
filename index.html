@@ -372,8 +372,10 @@ function loadCheapPlaces(){
     // 2. 공공데이터 API로 착한가격업소 (가격정보 포함)
     const sido=myCity||'';
     const sigun=myDistrict||'';
-    let url=CHEAP_API_URL+'?page=1&perPage=50&serviceKey='+CHEAP_API_KEY;
-    if(sido)url+='&cond[시도::EQ]='+encodeURIComponent(sido);
+    let apiUrl=CHEAP_API_URL+'?page=1&perPage=50&serviceKey='+CHEAP_API_KEY;
+    if(sido)apiUrl+='&cond[시도::EQ]='+encodeURIComponent(sido);
+    // CORS 프록시 사용
+    const url='https://corsproxy.io/?'+encodeURIComponent(apiUrl);
 
     fetch(url).then(r=>r.json()).then(json=>{
       if(json.data&&json.data.length>0){
@@ -821,7 +823,8 @@ function fetchPriceInfo(name,addr){
   const distEl=document.getElementById('mapInfoDist');
   // 착한가격업소 API에서 업소명으로 검색
   const searchName=name.replace(/\s/g,'');
-  fetch(CHEAP_API_URL+'?page=1&perPage=5&serviceKey='+CHEAP_API_KEY+'&cond[업소명::LIKE]='+encodeURIComponent(name))
+  const priceUrl=CHEAP_API_URL+'?page=1&perPage=5&serviceKey='+CHEAP_API_KEY+'&cond[업소명::LIKE]='+encodeURIComponent(name);
+  fetch('https://corsproxy.io/?'+encodeURIComponent(priceUrl))
     .then(r=>r.json())
     .then(json=>{
       if(json.data&&json.data.length>0){
