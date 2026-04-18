@@ -347,43 +347,51 @@ function loadNearbyPlaces(){
 const CHEAP_API_KEY='5bc82c0bad39033fb627ff2a735d64ef9dc5bccf0b9298cc0f8ab479f150ec1d';
 const CHEAP_API_URL='https://api.odcloud.kr/api/3045247/v1/uddi:538ed062-fccd-4315-9699-a81df945359c';
 
+function matchPrice(name){
+  if(!window._cheapData||!name)return '';
+  const found=window._cheapData.find(s=>s.n&&(s.n.includes(name)||name.includes(s.n)));
+  if(!found)return '';
+  const menus=[];
+  if(found.m1&&found.p1)menus.push(found.m1+' '+Number(found.p1).toLocaleString()+'원');
+  if(found.m2&&found.p2)menus.push(found.m2+' '+Number(found.p2).toLocaleString()+'원');
+  if(found.m3&&found.p3)menus.push(found.m3+' '+Number(found.p3).toLocaleString()+'원');
+  return menus.join(' / ');
+}
+
 function loadCheapPlaces(){
   const container=document.getElementById('items-cheap');
   container.innerHTML='<div class="loading">착한가격업소 + 내 주변 맛집 검색 중...</div>';
 
-  // 1. 카카오 로컬 API로 주변 맛집 먼저 검색 (가까운 순)
-  searchPlaces('착한가격업소',(kakaoData)=>{
-    // 카카오 결과를 먼저 표시
-    let html='';
-    if(kakaoData.length>0){
-      html+='<div style="font-size:12px;font-weight:700;color:#FF6B35;padding:8px 0;border-bottom:1px solid #f0f0f0;margin-bottom:10px">내 주변 착한가격 (가까운 순)</div>';
-      html+=kakaoData.map(p=>{
-        const dist=p.distance?formatDist(parseFloat(p.distance)/1000):'';
-        return `<div class="place-card" data-lat="${p.y}" data-lng="${p.x}">
-          <div class="place-top"><span class="card-badge badge-cheap">착한가격</span><span class="card-dist">${dist}</span></div>
-          <div class="place-name">${p.place_name||''}</div>
-          <div class="place-desc">${p.category_name||''}${p.phone?' · '+p.phone:''}</div>
-          <div class="place-meta"><span style="font-weight:600">${p.road_address_name||p.address_name||''}</span></div>
-          <div class="place-actions"><button class="place-action-btn navi" onclick="event.stopPropagation();window.open('https://map.kakao.com/link/to/${encodeURIComponent(p.place_name)},${p.y},${p.x}','_blank')">길찾기</button></div>
-        </div>`;
-      }).join('');
-    }
+  // JSON 먼저 로드 후 검색 시작
+  if(!window._cheapData){
+    fetch('cheap-data.json').then(r=>r.json()).then(d=>{window._cheapData=d;startLoad()}).catch(()=>startLoad());
+  }else{startLoad()}
+  function startLoad(){
+    searchPlaces('착한가격업소',(kakaoData)=>{
+      let html='';
+      if(kakaoData.length>0){
+        html+='<div style="font-size:12px;font-weight:700;color:#FF6B35;padding:8px 0;border-bottom:1px solid #f0f0f0;margin-bottom:10px">내 주변 착한가격 (가까운 순)</div>';
+        html+=kakaoData.map(p=>{
+          const dist=p.distance?formatDist(parseFloat(p.distance)/1000):'';
+          // JSON에서 가격정보 매칭
+          const priceInfo=matchPrice(p.place_name||'');
+          return `<div class="place-card" data-lat="${p.y}" data-lng="${p.x}">
+            <div class="place-top"><span class="card-badge badge-cheap">착한가격</span><span class="card-dist">${dist}</span></div>
+            <div class="place-name">${p.place_name||''}</div>
+            ${priceInfo?'<div style="font-size:13px;font-weight:800;color:#E65100;margin:4px 0">'+priceInfo+'</div>':''}
+            <div class="place-desc">${p.category_name||''}${p.phone?' · '+p.phone:''}</div>
+            <div class="place-meta"><span style="font-weight:600">${p.road_address_name||p.address_name||''}</span></div>
+            <div class="place-actions"><button class="place-action-btn navi" onclick="event.stopPropagation();window.open('https://map.kakao.com/link/to/${encodeURIComponent(p.place_name)},${p.y},${p.x}','_blank')">길찾기</button></div>
+          </div>`;
+        }).join('');
+      }
 
-    // 2. 로컬 JSON에서 착한가격업소 (가격정보 포함)
-    const sido=myCity||'';
-    const sigun=myDistrict||'';
-
-    if(!window._cheapData){
-      fetch('cheap-data.json').then(r=>r.json()).then(data=>{
-        window._cheapData=data;
-        renderCheapFromJSON(container,html,sido,sigun);
-      }).catch(()=>{
-        container.innerHTML=html||'<div class="empty">데이터를 불러올 수 없습니다.</div>';
-      });
-    }else{
+      // 2. JSON에서 가격정보 포함 업소 추가
+      const sido=myCity||'';
+      const sigun=myDistrict||'';
       renderCheapFromJSON(container,html,sido,sigun);
-    }
-  },{radius:10000});
+    },{radius:10000});
+  }
 }
 
 function renderCheapFromJSON(container,html,sido,sigun){
