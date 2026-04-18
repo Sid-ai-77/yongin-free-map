@@ -539,9 +539,9 @@ function renderCheapCards(container,stores){
     </div>`;
   }).join('');
 
-  // Ad after 3rd
+  // Ad after 3rd, 7th, 12th, 18th...
   const cards=container.querySelectorAll('.place-card');
-  if(cards.length>3){const ad=document.createElement('div');ad.className='ad-banner';ad.textContent='광고 영역 (AdSense 연동 예정)';cards[2].after(ad)}
+  [2,6,11,17,24].forEach(i=>{if(cards[i]){const ad=document.createElement('div');ad.className='ad-banner';ad.textContent='광고 영역 (AdSense 연동 예정)';cards[i].after(ad)}})
 }
 
 // ===== LOAD FREE (무료시설) =====
@@ -602,9 +602,9 @@ function renderPlaceCards(container,places,catId){
     </div>`;
   }).join('');
 
-  // Ad after 3rd
+  // Ad after 3rd, 7th, 12th, 18th...
   const cards=container.querySelectorAll('.place-card');
-  if(cards.length>3){const ad=document.createElement('div');ad.className='ad-banner';ad.textContent='광고 영역 (AdSense 연동 예정)';cards[2].after(ad)}
+  [2,6,11,17,24].forEach(i=>{if(cards[i]){const ad=document.createElement('div');ad.className='ad-banner';ad.textContent='광고 영역 (AdSense 연동 예정)';cards[i].after(ad)}})
 
   // Click -> map
   container.querySelectorAll('.place-card').forEach(card=>{
@@ -670,7 +670,7 @@ function loadRSS(container,feedUrl,badgeText){
 
 function renderNewsCards(container,items,badgeText){
   if(!items.length){container.innerHTML='<div class="empty">관련 정보가 없습니다.</div>';return}
-  container.innerHTML='<div class="ad-banner">광고 영역 (AdSense 연동 예정)</div>'+items.map(item=>{
+  container.innerHTML=items.map(item=>{
     const date=item.pubDate?new Date(item.pubDate).toLocaleDateString('ko-KR'):'';
     const title=(item.title||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     const link=(item.link||'#').replace(/"/g,'&quot;');
@@ -687,6 +687,9 @@ function renderNewsCards(container,items,badgeText){
       </a>
     </div>`;
   }).join('');
+  // Ad after 3rd, 7th card
+  const newsCards=container.querySelectorAll('.card');
+  [2,6,11].forEach(i=>{if(newsCards[i]){const ad=document.createElement('div');ad.className='ad-banner';ad.textContent='광고 영역 (AdSense 연동 예정)';newsCards[i].after(ad)}});
 }
 
 // ===== SHARE =====
@@ -706,7 +709,7 @@ function sharePlaceInfo(name,addr,placeUrl,type){
     text='공자 왈, 이곳을 알리지 않을 수 없도다!\n\n'+name+'\n'+addr+'\n\n'+url+'\n\n공짜병법 - 내 주변 착한가격/무료시설 찾기\n'+appUrl;
   }
   if(navigator.share){
-    navigator.share({title:'공짜병법 - '+name,text:text,url:url}).catch(()=>{});
+    navigator.share({title:'공짜병법 - '+name,text:text}).catch(()=>{});
   }else{
     navigator.clipboard.writeText(text).then(()=>toast('복사되었습니다!')).catch(()=>{});
   }
