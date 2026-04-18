@@ -1123,18 +1123,11 @@ loadAll();
 updateFavBadge();
 setInterval(loadAll, 60 * 60 * 1000);
 
-// 첫 화면: 지도 모드로 시작
-setTimeout(() => {
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  document.querySelector('.nav-item[data-nav="map"]').classList.add('active');
-  currentNav = 'map';
-  openMap();
-}, 300);
 </script>
 
 <!-- 카카오맵 SDK -->
 <script>
-const KAKAO_APP_KEY = 'd3217400691a606e3f7efe666f923f11';
+const KAKAO_APP_KEY = 'ce765ea76cec4f89f8af6f81c6e464c1';
 (function loadKakaoMap() {
   const s = document.createElement('script');
   s.src = '//dapi.kakao.com/v2/maps/sdk.js?appkey=' + KAKAO_APP_KEY + '&autoload=false&libraries=services';
