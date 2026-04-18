@@ -124,11 +124,32 @@
   .my-stat-num{font-size:20px;font-weight:800;color:#FF6B35}
   .my-stat-label{font-size:10px;color:#999;margin-top:4px}
 
+  /* Splash/Loading Screen */
+  .splash{position:fixed;top:0;left:0;width:100%;height:100%;background:linear-gradient(135deg,#FF6B35,#FF8F5E);z-index:999;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity 0.5s}
+  .splash.hide{opacity:0;pointer-events:none}
+  .splash-icon{width:80px;height:80px;border-radius:20px;animation:splashBounce 1s ease infinite;box-shadow:0 4px 20px rgba(0,0,0,0.2)}
+  @keyframes splashBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+  .splash-name{color:#fff;font-size:24px;font-weight:800;margin-top:16px}
+  .splash-status{color:rgba(255,255,255,0.8);font-size:12px;margin-top:8px;text-align:center;line-height:1.6}
+  .splash-dots::after{content:'';animation:dots 1.5s infinite}
+  @keyframes dots{0%{content:''}33%{content:'.'}66%{content:'..'}100%{content:'...'}}
+  .splash-bar{width:120px;height:4px;background:rgba(255,255,255,0.3);border-radius:2px;margin-top:16px;overflow:hidden}
+  .splash-bar-fill{height:100%;background:#fff;border-radius:2px;width:0%;transition:width 0.5s;animation:barFill 3s ease forwards}
+  @keyframes barFill{0%{width:0%}30%{width:30%}60%{width:60%}80%{width:80%}100%{width:95%}}
+
   .toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:10px 20px;border-radius:10px;font-size:12px;font-weight:600;z-index:200;opacity:0;transition:opacity 0.3s;pointer-events:none;max-width:300px;text-align:center}
   .toast.show{opacity:1}
 </style>
 </head>
 <body>
+
+<!-- Splash Screen -->
+<div class="splash" id="splash">
+  <video src="loading.mp4" autoplay loop muted playsinline style="width:120px;height:120px;border-radius:24px;box-shadow:0 4px 20px rgba(0,0,0,0.2)"></video>
+  <div class="splash-name">공짜병법</div>
+  <div class="splash-status" id="splashStatus">위치를 확인하고 있습니다<span class="splash-dots"></span></div>
+  <div class="splash-bar"><div class="splash-bar-fill"></div></div>
+</div>
 
 <div class="status-bar">
   <div>
@@ -224,6 +245,18 @@
         <button class="map-info-btn primary" id="mapInfoNavi">길찾기</button>
         <button class="map-info-btn secondary" id="mapInfoShare">공유</button>
       </div>
+      <div class="map-info-actions" style="margin-top:6px">
+        <button class="map-info-btn" id="mapInfoHeart" style="background:#fff;border:1.5px solid #FF6B35;color:#FF6B35;font-size:13px">&#x2661; <span id="heartCount">0</span></button>
+        <button class="map-info-btn" id="mapInfoKakao" style="background:#FEE500;color:#333;font-size:11px">카카오 리뷰</button>
+        <button class="map-info-btn" id="mapInfoNaver" style="background:#03C75A;color:#fff;font-size:11px">네이버 리뷰</button>
+      </div>
+      <div id="reviewSection" style="margin-top:10px;border-top:1px solid #f0f0f0;padding-top:10px">
+        <div style="display:flex;gap:6px;margin-bottom:8px">
+          <input id="reviewInput" placeholder="한 줄 리뷰를 남겨주세요" style="flex:1;padding:8px 10px;border:1.5px solid #eee;border-radius:8px;font-size:12px;font-family:inherit">
+          <button id="reviewSubmit" style="background:#FF6B35;color:#fff;border:none;padding:8px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">등록</button>
+        </div>
+        <div id="reviewList" style="font-size:11px;color:#888"></div>
+      </div>
       <div style="background:#f9f9f9;border:1px dashed #ddd;border-radius:6px;padding:8px;text-align:center;margin-top:10px;font-size:10px;color:#bbb">광고 영역 (AdSense 320x50)</div>
       <button id="mapInfoClose" style="position:absolute;top:8px;right:12px;background:none;border:none;font-size:18px;color:#ccc;cursor:pointer;padding:4px">&#x2715;</button>
     </div>
@@ -267,6 +300,7 @@ function initGPS(){
     onLocationReady();
   },()=>{
     document.getElementById('myLocationText').textContent='위치를 찾을 수 없습니다';
+    document.getElementById('splashStatus').textContent='기본 위치로 설정 중...';
     // 기본값: 서울시청
     myLat=37.5665;myLng=126.9780;myCity='서울';myDistrict='중구';
     onLocationReady();
@@ -277,8 +311,14 @@ function initGPS(){
   },()=>{},{enableHighAccuracy:true});
 }
 
+function hideSplash(){
+  const s=document.getElementById('splash');
+  if(s){document.getElementById('splashStatus').textContent='준비 완료!';setTimeout(()=>s.classList.add('hide'),500);setTimeout(()=>s.remove(),1000)}
+}
+
 function onLocationReady(){
   document.getElementById('myLocationText').textContent=myLat.toFixed(4)+', '+myLng.toFixed(4);
+  document.getElementById('splashStatus').textContent='주변 정보를 불러오는 중...';
   // 카카오 역지오코딩으로 지역명 파악
   waitForKakao(()=>{
     const geocoder=new kakao.maps.services.Geocoder();
@@ -292,6 +332,7 @@ function onLocationReady(){
         document.getElementById('mapTitle').textContent=myDistrict+' 주변 공짜 찾기';
       }
       // 위치 기반 데이터 로드
+      hideSplash();
       loadNearbyPlaces();
       loadCheapPlaces();
       loadFreePlaces();
@@ -877,6 +918,11 @@ function showMapInfo(place){
   document.getElementById('mapInfoDist').innerHTML='';
   fetchPriceInfo(pName,place.road_address_name||place.address_name||'');
   document.getElementById('mapInfoCard').classList.add('show');
+  // 하트/리뷰 로드
+  const placeId=(place.id||place.place_name||'').replace(/[^a-zA-Z0-9가-힣]/g,'_');
+  window._currentPlaceId=placeId;
+  if(window.loadHearts)loadHearts(placeId);
+  if(window.loadReviews)loadReviews(placeId);
 }
 
 function getMarkerLabel(p){
@@ -922,6 +968,18 @@ document.getElementById('mapInfoShare').addEventListener('click',()=>{
   if(!infoSelectedPlace)return;
   sharePlaceInfo(infoSelectedPlace.place_name,infoSelectedPlace.road_address_name||infoSelectedPlace.address_name||'');
 });
+document.getElementById('mapInfoKakao').addEventListener('click',()=>{
+  if(!infoSelectedPlace)return;
+  const p=infoSelectedPlace;
+  if(p.place_url){window.open(p.place_url,'_blank')}
+  else{window.open('https://map.kakao.com/link/search/'+encodeURIComponent(p.place_name),'_blank')}
+});
+document.getElementById('mapInfoNaver').addEventListener('click',()=>{
+  if(!infoSelectedPlace)return;
+  const name=infoSelectedPlace.place_name||'';
+  const addr=infoSelectedPlace.road_address_name||infoSelectedPlace.address_name||'';
+  window.open('https://m.search.naver.com/search.naver?query='+encodeURIComponent(name+' '+addr+' 리뷰'),'_blank');
+});
 document.getElementById('mapInfoClose').addEventListener('click',()=>{
   document.getElementById('mapInfoCard').classList.remove('show');
   // 닫으면 현재 위치 기준 재검색
@@ -962,6 +1020,93 @@ updateFavBadge();
   s.onload=()=>{kakao.maps.load(()=>{console.log('Kakao SDK ready')})};
   document.head.appendChild(s);
 })();
+</script>
+
+<!-- Firebase SDK -->
+<script type="module">
+import{initializeApp}from"https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
+import{getFirestore,doc,getDoc,setDoc,updateDoc,increment,collection,addDoc,query,orderBy,limit,getDocs}from"https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
+
+const firebaseConfig={
+  apiKey:"AIzaSyA6XvQA3PXJGfkyerYg8GDXIVpGrHDGeSs",
+  authDomain:"gongjja-byungbub.firebaseapp.com",
+  projectId:"gongjja-byungbub",
+  storageBucket:"gongjja-byungbub.firebasestorage.app",
+  messagingSenderId:"6840415596",
+  appId:"1:6840415596:web:6665cbb728ff29fe012f49",
+  measurementId:"G-48J01Z28PM"
+};
+
+const app=initializeApp(firebaseConfig);
+const db=getFirestore(app);
+
+// 기기 ID (중복 방지)
+let deviceId=localStorage.getItem('gbb_device');
+if(!deviceId){deviceId='d_'+Math.random().toString(36).slice(2);localStorage.setItem('gbb_device',deviceId)}
+
+// 하트 기능
+window.loadHearts=async function(placeId){
+  try{
+    const ref=doc(db,'hearts',placeId);
+    const snap=await getDoc(ref);
+    const count=snap.exists()?snap.data().count||0:0;
+    const liked=snap.exists()&&snap.data().users&&snap.data().users.includes(deviceId);
+    document.getElementById('heartCount').textContent=count;
+    const btn=document.getElementById('mapInfoHeart');
+    if(liked){btn.innerHTML='&#x2665; '+count;btn.style.background='#FF6B35';btn.style.color='#fff'}
+    else{btn.innerHTML='&#x2661; '+count;btn.style.background='#fff';btn.style.color='#FF6B35'}
+  }catch(e){console.log('Hearts error:',e)}
+};
+
+document.getElementById('mapInfoHeart').addEventListener('click',async()=>{
+  if(!window._currentPlaceId)return;
+  const placeId=window._currentPlaceId;
+  try{
+    const ref=doc(db,'hearts',placeId);
+    const snap=await getDoc(ref);
+    if(snap.exists()){
+      const users=snap.data().users||[];
+      if(users.includes(deviceId)){toast('이미 하트를 누르셨습니다');return}
+      await updateDoc(ref,{count:increment(1),users:[...users,deviceId]});
+    }else{
+      await setDoc(ref,{count:1,users:[deviceId],name:infoSelectedPlace?.place_name||''});
+    }
+    loadHearts(placeId);
+    toast('하트를 눌렀습니다!');
+  }catch(e){console.log('Heart error:',e);toast('잠시 후 다시 시도해주세요')}
+});
+
+// 리뷰 기능
+window.loadReviews=async function(placeId){
+  const list=document.getElementById('reviewList');
+  try{
+    const q2=query(collection(db,'reviews',placeId,'items'),orderBy('ts','desc'),limit(5));
+    const snap=await getDocs(q2);
+    if(snap.empty){list.innerHTML='<div style="color:#ccc;text-align:center;padding:8px">아직 리뷰가 없습니다</div>';return}
+    list.innerHTML=snap.docs.map(d=>{
+      const r=d.data();
+      const date=r.ts?new Date(r.ts.seconds*1000).toLocaleDateString('ko-KR'):'';
+      return '<div style="padding:4px 0;border-bottom:1px solid #f9f9f9"><span style="color:#FF6B35;font-weight:600">'+r.nick+'</span> <span style="color:#aaa;font-size:10px">'+date+'</span><div style="margin-top:2px">'+r.text+'</div></div>';
+    }).join('');
+  }catch(e){list.innerHTML=''}
+};
+
+document.getElementById('reviewSubmit').addEventListener('click',async()=>{
+  if(!window._currentPlaceId)return;
+  const input=document.getElementById('reviewInput');
+  const text=input.value.trim();
+  if(!text){toast('리뷰를 입력해주세요');return}
+  if(text.length>100){toast('100자 이내로 작성해주세요');return}
+  try{
+    const nick='익명'+deviceId.slice(-4);
+    await addDoc(collection(db,'reviews',window._currentPlaceId,'items'),{
+      text:text,nick:nick,device:deviceId,ts:new Date()
+    });
+    input.value='';
+    toast('리뷰가 등록되었습니다!');
+    loadReviews(window._currentPlaceId);
+  }catch(e){console.log('Review error:',e);toast('잠시 후 다시 시도해주세요')}
+});
 </script>
 </body>
 </html>
