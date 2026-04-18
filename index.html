@@ -534,7 +534,7 @@ function renderCheapCards(container,stores){
       ${phone?'<div style="font-size:11px;color:#aaa;margin-top:4px">'+phone+'</div>':''}
       <div class="place-actions">
         <button class="place-action-btn navi" onclick="event.stopPropagation();window.open('https://map.kakao.com/link/search/${encodeURIComponent(name)}','_blank')">길찾기</button>
-        <button class="place-action-btn share" onclick="event.stopPropagation();sharePlaceInfo('${name.replace(/'/g,"")}','${(addr+' '+menuText).replace(/'/g,"")}')">공유</button>
+        <button class="place-action-btn" style="background:#FEE500;color:#333" onclick="event.stopPropagation();sharePlaceInfo('${name.replace(/'/g,"")}','${(addr+' '+menuText).replace(/'/g,"")}','','cheap')">카톡공유</button>
       </div>
     </div>`;
   }).join('');
@@ -597,7 +597,7 @@ function renderPlaceCards(container,places,catId){
       </div>
       <div class="place-actions">
         <button class="place-action-btn navi" onclick="event.stopPropagation();window.open('https://map.kakao.com/link/to/${encodeURIComponent(p.place_name)},${p.y},${p.x}','_blank')">길찾기</button>
-        <button class="place-action-btn share" onclick="event.stopPropagation();sharePlaceInfo('${(p.place_name||'').replace(/'/g,"\\'")}','${addr.replace(/'/g,"\\'")}')">공유</button>
+        <button class="place-action-btn" style="background:#FEE500;color:#333" onclick="event.stopPropagation();sharePlaceInfo('${(p.place_name||'').replace(/'/g,"\\'")}','${addr.replace(/'/g,"\\'")}','','cheap')">카톡공유</button>
       </div>
     </div>`;
   }).join('');
@@ -670,25 +670,41 @@ function loadRSS(container,feedUrl,badgeText){
 
 function renderNewsCards(container,items,badgeText){
   if(!items.length){container.innerHTML='<div class="empty">관련 정보가 없습니다.</div>';return}
-  container.innerHTML=items.map(item=>{
+  container.innerHTML='<div class="ad-banner">광고 영역 (AdSense 연동 예정)</div>'+items.map(item=>{
     const date=item.pubDate?new Date(item.pubDate).toLocaleDateString('ko-KR'):'';
     const title=(item.title||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     const link=(item.link||'#').replace(/"/g,'&quot;');
     const desc=(item.description||'').replace(/<[^>]+>/g,'').replace(/&[^;]+;/g,' ').slice(0,100);
-    return `<div class="card"><a href="${link}" target="_blank" rel="noopener">
-      <div class="card-top"><span class="card-badge badge-event">${badgeText}</span></div>
-      <div class="card-title">${title}</div>
-      <div class="card-desc">${desc}</div>
-      <div class="card-meta"><span>${date}</span><span>${myCity||''}</span></div>
-    </a></div>`;
+    const shareType=badgeText.includes('행사')?'event':'news';
+    return `<div class="card">
+      <div class="card-top"><span class="card-badge badge-event">${badgeText}</span>
+        <button style="background:#FEE500;border:none;font-size:10px;color:#333;cursor:pointer;border-radius:4px;padding:3px 8px;font-weight:600" onclick="event.preventDefault();event.stopPropagation();sharePlaceInfo('${title.replace(/'/g,"")}','','${link}','${shareType}')">카톡공유</button>
+      </div>
+      <a href="${link}" target="_blank" rel="noopener">
+        <div class="card-title">${title}</div>
+        <div class="card-desc">${desc}</div>
+        <div class="card-meta"><span>${date}</span><span>${myCity||''}</span></div>
+      </a>
+    </div>`;
   }).join('');
 }
 
 // ===== SHARE =====
-function sharePlaceInfo(name,addr,placeUrl){
+function sharePlaceInfo(name,addr,placeUrl,type){
   const url=placeUrl||'https://map.kakao.com/link/search/'+encodeURIComponent(name);
-  const text='[공짜병법] '+name+'\n'+addr+'\n'+url;
-  // 모바일: 네이티브 공유 시트 (카카오톡 포함)
+  let text='';
+  const appUrl='https://sid-ai-77.github.io/yongin-free-map/';
+  if(type==='cheap'){
+    text='공자 왈, 이 집은 가격이 착하도다!\n\n'+name+'\n'+addr+'\n\n'+url+'\n\n공짜병법에서 더 많은 착한가격 찾기\n'+appUrl;
+  }else if(type==='free'){
+    text='공자 왈, 돈 안 내고 이용할 수 있으니 이 어찌 기쁘지 아니한가!\n\n'+name+'\n'+addr+'\n\n'+url+'\n\n공짜병법에서 무료시설 더 찾기\n'+appUrl;
+  }else if(type==='event'){
+    text='공자 왈, 공짜로 즐길 수 있는 행사가 있으니 가지 않을 수 있겠는가!\n\n'+name+'\n\n'+url+'\n\n공짜병법에서 무료행사 더 찾기\n'+appUrl;
+  }else if(type==='news'){
+    text='공자 왈, 이 소식을 알리지 않으면 이웃에게 도리가 아니니라!\n\n'+name+'\n\n'+url+'\n\n공짜병법에서 지역소식 더 보기\n'+appUrl;
+  }else{
+    text='공자 왈, 이곳을 알리지 않을 수 없도다!\n\n'+name+'\n'+addr+'\n\n'+url+'\n\n공짜병법 - 내 주변 착한가격/무료시설 찾기\n'+appUrl;
+  }
   if(navigator.share){
     navigator.share({title:'공짜병법 - '+name,text:text,url:url}).catch(()=>{});
   }else{
@@ -989,7 +1005,7 @@ document.getElementById('mapInfoNavi').addEventListener('click',()=>{
 document.getElementById('mapInfoShare').addEventListener('click',()=>{
   if(!infoSelectedPlace)return;
   const p=infoSelectedPlace;
-  sharePlaceInfo(p.place_name,p.road_address_name||p.address_name||'',p.place_url);
+  sharePlaceInfo(p.place_name,p.road_address_name||p.address_name||'',p.place_url,'cheap');
 });
 document.getElementById('mapInfoKakao').addEventListener('click',()=>{
   if(!infoSelectedPlace)return;
