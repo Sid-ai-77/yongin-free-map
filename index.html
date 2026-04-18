@@ -789,11 +789,11 @@ mainContent.addEventListener('touchend', () => {
 // ===== RSS FEEDS =====
 const RSS2JSON = 'https://api.rss2json.com/v1/api.json?rss_url=';
 const FEEDS = {
-  all: 'https://news.google.com/rss/search?q=용인+무료+OR+저렴+OR+착한가격+OR+할인+OR+나눔&hl=ko&gl=KR&ceid=KR:ko',
-  event: 'https://news.google.com/rss/search?q=용인+무료+행사+OR+축제+OR+공연+OR+체험&hl=ko&gl=KR&ceid=KR:ko',
-  food: 'https://news.google.com/rss/search?q=용인+착한가격업소+OR+가성비+맛집+OR+저렴한+식당&hl=ko&gl=KR&ceid=KR:ko',
-  class: 'https://news.google.com/rss/search?q=용인+무료+강좌+OR+교육+OR+도서관+OR+문화센터&hl=ko&gl=KR&ceid=KR:ko',
-  deal: 'https://news.google.com/rss/search?q=용인+할인+OR+이벤트+OR+쿠폰+OR+세일&hl=ko&gl=KR&ceid=KR:ko',
+  all: 'https://news.google.com/rss/search?q=용인시+무료+OR+저렴+OR+착한가격+OR+할인+OR+혜택+OR+축제&hl=ko&gl=KR&ceid=KR:ko',
+  event: 'https://news.google.com/rss/search?q=용인시+무료+행사+OR+축제+OR+공연+OR+체험+OR+전시+OR+페스티벌&hl=ko&gl=KR&ceid=KR:ko',
+  food: 'https://news.google.com/rss/search?q=용인시+착한가격업소+OR+가성비+맛집+OR+저렴한+식당+OR+맛집추천&hl=ko&gl=KR&ceid=KR:ko',
+  class: 'https://news.google.com/rss/search?q=용인시+무료+강좌+OR+교육+OR+도서관+OR+문화센터+OR+평생학습&hl=ko&gl=KR&ceid=KR:ko',
+  deal: 'https://news.google.com/rss/search?q=용인시+할인+OR+이벤트+OR+쿠폰+OR+세일+OR+특가&hl=ko&gl=KR&ceid=KR:ko',
 };
 
 const BADGES = {
@@ -873,13 +873,14 @@ async function loadCategory(catId) {
     const json = await res.json();
     if (json.status === 'ok' && json.items) {
       // 용인 지역 필터링 — 제목 또는 설명에 용인 관련 키워드 포함된 것만
-      const yonginKeywords = ['용인','수지','기흥','처인','죽전','보정','구갈','풍덕천','상현','동백','마북','역북','신봉','성복','수지구','기흥구','처인구'];
+      const yonginKeywords = ['용인','수지','기흥','처인','죽전','보정','구갈','풍덕천','상현','동백','마북','역북','신봉','성복','수지구','기흥구','처인구','모현','포곡','양지','백암','원삼'];
       const otherCities = ['수원','성남','화성','평택','안양','안산','부천','인천','서울','대전','부산','광주','대구','세종','제주','강릉','춘천','전주','목포','창원','청주','천안','원주'];
       const items = json.items.filter(item => {
         const text = ((item.title || '') + ' ' + (item.description || '')).replace(/<[^>]+>/g, '');
         const hasYongin = yonginKeywords.some(kw => text.includes(kw));
         const hasOtherCity = otherCities.some(c => text.includes(c) && !text.includes('용인'));
-        return hasYongin && !hasOtherCity;
+        const hasNanum = text.includes('나눔');
+        return hasYongin && !hasOtherCity && !hasNanum;
       }).slice(0, 12);
       items.sort((a, b) => new Date(b.pubDate || 0) - new Date(a.pubDate || 0));
       STORAGE.set(cacheKey, { ts: Date.now(), items });
