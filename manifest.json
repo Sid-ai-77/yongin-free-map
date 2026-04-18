@@ -1,10 +1,10 @@
 {
-  "name": "공짜병법(용인)",
+  "name": "공짜병법 — 내 주변 무료/착한가격 정보",
   "short_name": "공짜병법",
-  "description": "내 주변 공짜/착한가격 정보를 지도에서 바로 찾기 — 용인시 무료 행사, 착한가격업소, 무료 강좌, 나눔장터",
+  "description": "내 주변 착한가격업소, 무료시설, 행사 정보를 지도에서 바로 찾기",
   "start_url": "/yongin-free-map/",
   "display": "standalone",
-  "background_color": "#0f0f1a",
+  "background_color": "#f5f5f5",
   "theme_color": "#FF6B35",
   "orientation": "portrait",
   "icons": [

@@ -95,9 +95,6 @@
   .map-category-bar::-webkit-scrollbar{display:none}
   .map-cat{padding:6px 12px;border-radius:18px;font-size:11px;font-weight:700;cursor:pointer;border:none;background:#fff;color:#666;box-shadow:0 1px 4px rgba(0,0,0,0.15);font-family:inherit}
   .map-cat.active{background:#FF6B35;color:#fff}
-  .map-radius-bar{position:absolute;top:50px;left:10px;z-index:92;display:flex;gap:4px}
-  .radius-btn{padding:4px 10px;border-radius:12px;font-size:10px;font-weight:600;cursor:pointer;border:none;background:rgba(255,255,255,0.9);color:#888;font-family:inherit;box-shadow:0 1px 3px rgba(0,0,0,0.1)}
-  .radius-btn.active{background:#222;color:#fff}
   .map-count{position:absolute;top:50px;right:10px;z-index:92;background:rgba(0,0,0,0.6);color:#fff;font-size:10px;font-weight:600;padding:4px 10px;border-radius:10px}
   .map-controls{position:absolute;bottom:20px;right:16px;z-index:92;display:flex;flex-direction:column;gap:8px}
   .map-ctrl-btn{width:44px;height:44px;border-radius:50%;background:#fff;border:none;box-shadow:0 2px 8px rgba(0,0,0,0.2);cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center}
@@ -210,12 +207,6 @@
       <button class="map-cat" data-mcat="cheap">착한가격</button>
       <button class="map-cat" data-mcat="free">무료시설</button>
       <button class="map-cat" data-mcat="class">무료강좌</button>
-    </div>
-    <div class="map-radius-bar">
-      <button class="radius-btn" data-r="0.5">500m</button>
-      <button class="radius-btn active" data-r="1">1km</button>
-      <button class="radius-btn" data-r="3">3km</button>
-      <button class="radius-btn" data-r="0">전체</button>
     </div>
     <div class="map-count" id="mapCount">검색 중...</div>
     <div id="kakaoMap"></div>
@@ -575,7 +566,7 @@ function showMyPage(){
 }
 
 // ===== MAP =====
-let kakaoMap,mapMarkers=[],myMarker,mapCircle,mapRadius=1,infoSelectedPlace=null;
+let kakaoMap,mapMarkers=[],myMarker,mapCircle,infoSelectedPlace=null;
 
 function openMap(){
   document.getElementById('mapView').classList.add('active');
@@ -591,14 +582,6 @@ function openMap(){
           document.querySelectorAll('.map-cat').forEach(b=>b.classList.remove('active'));
           btn.classList.add('active');
           searchAndShowMarkers(btn.dataset.mcat);
-        });
-      });
-      document.querySelectorAll('.radius-btn').forEach(btn=>{
-        btn.addEventListener('click',()=>{
-          document.querySelectorAll('.radius-btn').forEach(b=>b.classList.remove('active'));
-          btn.classList.add('active');
-          mapRadius=parseFloat(btn.dataset.r);
-          searchAndShowMarkers(document.querySelector('.map-cat.active').dataset.mcat);
         });
       });
     });
@@ -631,7 +614,7 @@ function searchAndShowMarkers(cat){
     class:['문화센터','평생학습','무료강좌']
   };
   const keywords=keywordsMap[cat]||keywordsMap.all;
-  const radius=mapRadius>0?mapRadius*1000:10000;
+  const radius=10000;
   let allResults=[];
   let done=0;
 
@@ -645,7 +628,6 @@ function searchAndShowMarkers(cat){
         const seen=new Set();
         allResults=allResults.filter(p=>{if(seen.has(p.id))return false;seen.add(p.id);return true});
         document.getElementById('mapCount').textContent=allResults.length+'개 장소';
-        drawRadiusCircle();
         allResults.forEach(place=>{
           const markerContent=document.createElement('div');
           markerContent.style.cssText='display:flex;flex-direction:column;align-items:center;cursor:pointer';
@@ -667,17 +649,6 @@ function searchAndShowMarkers(cat){
   });
 }
 
-function drawRadiusCircle(){
-  if(mapCircle)mapCircle.setMap(null);
-  if(!kakaoMap||!myLat||!myLng||mapRadius<=0)return;
-  mapCircle=new kakao.maps.Circle({
-    center:new kakao.maps.LatLng(myLat,myLng),
-    radius:mapRadius*1000,
-    strokeWeight:2,strokeColor:'#FF6B35',strokeOpacity:0.4,
-    fillColor:'#FF6B35',fillOpacity:0.06
-  });
-  mapCircle.setMap(kakaoMap);
-}
 
 function showMapInfo(place){
   infoSelectedPlace=place;
