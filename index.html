@@ -388,8 +388,14 @@ function loadCheapPlaces(){
 
 function renderCheapFromJSON(container,html,sido,sigun){
   let stores=window._cheapData||[];
-  // 시군구 필터
-  if(sigun)stores=stores.filter(s=>s.g&&s.g.includes(sigun));
+  // 시군구 필터 (주소에서도 검색)
+  if(sigun){
+    stores=stores.filter(s=>(s.g&&s.g.includes(sigun))||(s.a&&s.a.includes(sigun)));
+    // 구 단위로 못 찾으면 시 단위로 확장 (예: 수지구 → 용인시)
+    if(stores.length<5&&sido){
+      stores=window._cheapData.filter(s=>(s.s&&s.s.includes(sido))||(s.a&&s.a.includes(sido)));
+    }
+  }
   else if(sido)stores=stores.filter(s=>s.s&&s.s.includes(sido));
   if(stores.length>0){
     html+='<div style="font-size:12px;font-weight:700;color:#E65100;padding:8px 0;border-bottom:1px solid #f0f0f0;margin:16px 0 10px">'+(sigun||sido)+' 착한가격 인증업소 ('+stores.length+'개)</div>';
@@ -701,10 +707,7 @@ function showPartnerPage(){
           <button onclick="submitPartner()" style="background:#FF6B35;color:#fff;border:none;padding:12px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">문의 보내기</button>
         </div>
       </div>
-      <div style="background:#fff;border-radius:14px;padding:16px;margin-top:12px;box-shadow:0 1px 4px rgba(0,0,0,0.06);text-align:center">
-        <p style="font-size:12px;color:#888">직접 연락을 원하시면</p>
-        <a href="mailto:ptodak@naver.com" style="color:#FF6B35;font-weight:600;font-size:13px;text-decoration:none">ptodak@naver.com</a>
-      </div>`;
+      `;
     main.appendChild(partnerDiv);
   }
   partnerDiv.style.display='block';
@@ -880,26 +883,24 @@ function getMarkerLabel(p){
 
 function fetchPriceInfo(name,addr){
   const distEl=document.getElementById('mapInfoDist');
-  // 착한가격업소 API에서 업소명으로 검색
-  const searchName=name.replace(/\s/g,'');
-  const priceUrl=CHEAP_API_URL+'?page=1&perPage=5&serviceKey='+CHEAP_API_KEY+'&cond[업소명::LIKE]='+encodeURIComponent(name);
-  fetch('https://corsproxy.io/?'+encodeURIComponent(priceUrl))
-    .then(r=>r.json())
-    .then(json=>{
-      if(json.data&&json.data.length>0){
-        const s=json.data[0];
-        const menus=[];
-        if(s.메뉴1&&s.가격1)menus.push('<b>'+s.메뉴1+'</b> '+Number(s.가격1).toLocaleString()+'원');
-        if(s.메뉴2&&s.가격2)menus.push('<b>'+s.메뉴2+'</b> '+Number(s.가격2).toLocaleString()+'원');
-        if(s.메뉴3&&s.가격3)menus.push('<b>'+s.메뉴3+'</b> '+Number(s.가격3).toLocaleString()+'원');
-        if(menus.length>0){
-          distEl.innerHTML='<span style="color:#E65100;font-weight:800;font-size:13px">'+menus.join(' / ')+'</span>';
-        }else{
-          distEl.innerHTML='<span style="color:#E65100;font-weight:700">착한가격 인증업소</span>';
-        }
+  // 로컬 JSON에서 업소명 검색
+  function doSearch(){
+    if(!window._cheapData)return;
+    const found=window._cheapData.find(s=>s.n&&(s.n.includes(name)||name.includes(s.n)));
+    if(found){
+      const menus=[];
+      if(found.m1&&found.p1)menus.push('<b>'+found.m1+'</b> '+Number(found.p1).toLocaleString()+'원');
+      if(found.m2&&found.p2)menus.push('<b>'+found.m2+'</b> '+Number(found.p2).toLocaleString()+'원');
+      if(found.m3&&found.p3)menus.push('<b>'+found.m3+'</b> '+Number(found.p3).toLocaleString()+'원');
+      if(menus.length>0){
+        distEl.innerHTML='<span style="color:#E65100;font-weight:800;font-size:13px">'+menus.join(' / ')+'</span>';
+      }else{
+        distEl.innerHTML='<span style="color:#E65100;font-weight:700">착한가격 인증업소</span>';
       }
-    })
-    .catch(()=>{});
+    }
+  }
+  if(window._cheapData){doSearch()}
+  else{fetch('cheap-data.json').then(r=>r.json()).then(d=>{window._cheapData=d;doSearch()}).catch(()=>{})}
 }
 
 document.getElementById('mapInfoNavi').addEventListener('click',()=>{
