@@ -11,6 +11,8 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <title>공짜병법</title>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4566861735736673" crossorigin="anonymous"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet">
 <style>
   *{margin:0;padding:0;box-sizing:border-box}
@@ -55,7 +57,8 @@
   .card-meta{font-size:11px;color:#aaa;display:flex;justify-content:space-between;align-items:center}
   .card-dist{color:#FF6B35;font-weight:600}
 
-  .place-card{background:#fff;border-radius:14px;padding:14px;margin-bottom:10px;box-shadow:0 1px 4px rgba(0,0,0,0.06);border:1px solid #f0f0f0;cursor:pointer;transition:transform 0.15s}
+  .place-card{background:#fff;border-radius:14px;padding:14px;margin-bottom:10px;box-shadow:0 1px 4px rgba(0,0,0,0.06);border:1px solid #f0f0f0;cursor:pointer;transition:transform 0.15s;animation:fadeInUp 0.3s ease}
+  @keyframes fadeInUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
   .place-card:active{transform:scale(0.98)}
   .place-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
   .place-name{font-size:14px;font-weight:700;color:#222}
@@ -145,10 +148,11 @@
 
 <!-- Splash Screen -->
 <div class="splash" id="splash">
-  <video src="loading.mp4" autoplay loop muted playsinline style="width:200px;height:200px;border-radius:30px;box-shadow:0 4px 20px rgba(0,0,0,0.2)"></video>
-  <div class="splash-name">공짜병법</div>
-  <div class="splash-status" id="splashStatus">위치를 확인하고 있습니다<span class="splash-dots"></span></div>
-  <div class="splash-bar"><div class="splash-bar-fill"></div></div>
+  <video src="loading.mp4" autoplay muted playsinline id="splashVideo" style="width:80vw;max-width:360px;border-radius:20px;box-shadow:0 4px 20px rgba(0,0,0,0.3)"></video>
+  <div style="position:absolute;bottom:40px;width:100%;text-align:center">
+    <div class="splash-status" id="splashStatus">위치를 확인하고 있습니다<span class="splash-dots"></span></div>
+    <div class="splash-bar" style="margin:8px auto"><div class="splash-bar-fill"></div></div>
+  </div>
 </div>
 
 <div class="status-bar">
@@ -263,10 +267,10 @@
 </div>
 
 <div class="bottom-nav">
-  <div class="nav-item active" data-nav="home"><div class="nav-icon">&#x1F3E0;</div>홈</div>
-  <div class="nav-item" data-nav="map"><div class="nav-icon">&#x1F5FA;</div>지도</div>
-  <div class="nav-item" data-nav="partner"><div class="nav-icon">&#x1F91D;</div>제휴문의</div>
-  <div class="nav-item" data-nav="my"><div class="nav-icon">&#x1F464;</div>MY</div>
+  <div class="nav-item active" data-nav="home"><div class="nav-icon"><i class="fas fa-home"></i></div>홈</div>
+  <div class="nav-item" data-nav="map"><div class="nav-icon"><i class="fas fa-map-marked-alt"></i></div>지도</div>
+  <div class="nav-item" data-nav="partner"><div class="nav-icon"><i class="fas fa-handshake"></i></div>제휴문의</div>
+  <div class="nav-item" data-nav="my"><div class="nav-icon"><i class="fas fa-user"></i></div>MY</div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -310,7 +314,12 @@ function initGPS(){
   },()=>{},{enableHighAccuracy:true});
 }
 
+let _splashReady=false,_videoEnd=false;
 function hideSplash(){
+  _splashReady=true;_trySplash();
+}
+function _trySplash(){
+  if(!_splashReady||!_videoEnd)return;
   const s=document.getElementById('splash');
   if(s){document.getElementById('splashStatus').textContent='준비 완료!';setTimeout(()=>s.classList.add('hide'),500);setTimeout(()=>s.remove(),1000)}
 }
@@ -877,10 +886,83 @@ function showMyMarker(){
   myMarker.setMap(kakaoMap);
 }
 
+// 주요 관광명소 (별 마커 표시)
+const LANDMARKS=[
+  {name:'경복궁',en:'Gyeongbokgung Palace',lat:37.5796,lng:126.9770,free:'한복 착용 시 무료'},
+  {name:'창덕궁',en:'Changdeokgung Palace',lat:37.5794,lng:126.9910,free:'UNESCO 세계유산'},
+  {name:'국립중앙박물관',en:'National Museum',lat:37.5238,lng:126.9801,free:'무료'},
+  {name:'N서울타워',en:'N Seoul Tower',lat:37.5512,lng:126.9882,free:'전망대 유료'},
+  {name:'북촌한옥마을',en:'Bukchon Hanok Village',lat:37.5816,lng:126.9842,free:'무료'},
+  {name:'인사동',en:'Insadong',lat:37.5746,lng:126.9852,free:'무료'},
+  {name:'홍대',en:'Hongdae',lat:37.5565,lng:126.9238,free:'무료'},
+  {name:'명동',en:'Myeongdong',lat:37.5636,lng:126.9836,free:'무료'},
+  {name:'DDP',en:'Dongdaemun Design Plaza',lat:37.5670,lng:127.0095,free:'무료'},
+  {name:'청계천',en:'Cheonggyecheon',lat:37.5697,lng:126.9784,free:'무료'},
+  {name:'광장시장',en:'Gwangjang Market',lat:37.5702,lng:126.9996,free:'무료'},
+  {name:'성수동',en:'Seongsu-dong',lat:37.5445,lng:127.0562,free:'무료'},
+  {name:'여의도한강공원',en:'Yeouido Hangang Park',lat:37.5283,lng:126.9346,free:'무료'},
+  {name:'반포한강공원',en:'Banpo Hangang Park',lat:37.5121,lng:126.9969,free:'달빛무지개분수'},
+  {name:'뚝섬한강공원',en:'Ttukseom Hangang Park',lat:37.5310,lng:127.0660,free:'무료'},
+  {name:'잠실한강공원',en:'Jamsil Hangang Park',lat:37.5178,lng:127.0820,free:'무료'},
+  {name:'망원한강공원',en:'Mangwon Hangang Park',lat:37.5560,lng:126.8960,free:'무료'},
+  {name:'이촌한강공원',en:'Ichon Hangang Park',lat:37.5170,lng:126.9720,free:'무료'},
+  {name:'해운대',en:'Haeundae Beach',lat:35.1586,lng:129.1604,free:'무료'},
+  {name:'감천문화마을',en:'Gamcheon Culture Village',lat:35.0972,lng:129.0106,free:'무료'},
+  {name:'자갈치시장',en:'Jagalchi Market',lat:35.0965,lng:129.0300,free:'무료'},
+  {name:'한라산',en:'Hallasan',lat:33.3617,lng:126.5292,free:'무료'},
+  {name:'성산일출봉',en:'Seongsan Ilchulbong',lat:33.4585,lng:126.9424,free:'유료'},
+  {name:'전주한옥마을',en:'Jeonju Hanok Village',lat:35.8154,lng:127.1524,free:'무료'},
+  {name:'불국사',en:'Bulguksa Temple',lat:35.7896,lng:129.3316,free:'UNESCO'},
+  {name:'수원화성',en:'Suwon Hwaseong',lat:37.2857,lng:127.0135,free:'UNESCO'},
+  {name:'남이섬',en:'Nami Island',lat:37.7938,lng:127.5166,free:'유료'},
+  {name:'설악산',en:'Seoraksan',lat:38.1197,lng:128.4657,free:'무료'},
+];
+let landmarkMarkers=[];
+
+function showLandmarks(){
+  landmarkMarkers.forEach(m=>m.setMap(null));
+  landmarkMarkers=[];
+  if(!kakaoMap)return;
+  const bounds=kakaoMap.getBounds();
+  LANDMARKS.forEach(lm=>{
+    const pos=new kakao.maps.LatLng(lm.lat,lm.lng);
+    if(!bounds.contain(pos))return;
+    const mk=document.createElement('div');
+    mk.style.cssText='display:flex;flex-direction:column;align-items:center;cursor:pointer';
+    mk.innerHTML='<img src="marker-star.png" style="width:32px;height:32px;filter:drop-shadow(0 2px 3px rgba(0,0,0,0.3))"><div style="background:#FFD700;color:#333;font-size:9px;font-weight:700;padding:2px 6px;border-radius:6px;margin-top:-2px;white-space:nowrap;box-shadow:0 1px 2px rgba(0,0,0,0.2)">'+lm.name+'</div>';
+    const ov=new kakao.maps.CustomOverlay({position:pos,content:mk,yAnchor:1.3});
+    ov.setMap(kakaoMap);
+    landmarkMarkers.push(ov);
+    mk.addEventListener('click',()=>{
+      showPlaceInfo({place_name:lm.name,category_name:lm.en,road_address_name:lm.free,y:lm.lat,x:lm.lng});
+      kakaoMap.panTo(pos);
+    });
+  });
+}
+
+// 근접 마커 통합 (같은 위치 반경 30m 이내 중복 제거)
+function dedupeNearby(places){
+  const result=[];
+  const used=new Set();
+  places.forEach((p,i)=>{
+    if(used.has(i))return;
+    result.push(p);
+    places.forEach((q,j)=>{
+      if(i===j||used.has(j))return;
+      const d=getDistance(parseFloat(p.y),parseFloat(p.x),parseFloat(q.y),parseFloat(q.x));
+      if(d<0.03)used.add(j); // 30m 이내
+    });
+  });
+  return result;
+}
+
 function searchAndShowMarkers(cat){
   mapMarkers.forEach(m=>m.setMap(null));
   mapMarkers=[];
   document.getElementById('mapInfoCard').classList.remove('show');
+
+  // 랜드마크 항상 표시
+  showLandmarks();
 
   const keywordsMap={
     all:['착한가격업소','무료주차장','도서관','공원','체육센터'],
@@ -910,6 +992,8 @@ function searchAndShowMarkers(cat){
         if(done===keywords.length){
           const seen=new Set();
           allResults=allResults.filter(p=>{if(seen.has(p.id))return false;seen.add(p.id);return true});
+          // 근접 마커 통합
+          allResults=dedupeNearby(allResults);
           document.getElementById('mapCount').textContent=allResults.length+'개 장소';
           allResults.forEach(place=>{
             const markerContent=document.createElement('div');
@@ -1060,6 +1144,9 @@ window.toggleCardHeart=function(btn){
 if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{})}
 
 // ===== INIT =====
+const _sv=document.getElementById('splashVideo');
+if(_sv){_sv.addEventListener('ended',()=>{_videoEnd=true;_trySplash()})}
+setTimeout(()=>{_videoEnd=true;_trySplash()},10000);
 initGPS();
 updateFavBadge();
 </script>
