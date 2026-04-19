@@ -950,7 +950,7 @@ function dedupeNearby(places){
     places.forEach((q,j)=>{
       if(i===j||used.has(j))return;
       const d=getDistance(parseFloat(p.y),parseFloat(p.x),parseFloat(q.y),parseFloat(q.x));
-      if(d<0.03)used.add(j); // 30m 이내
+      if(d<0.1)used.add(j); // 100m 이내
     });
   });
   return result;
